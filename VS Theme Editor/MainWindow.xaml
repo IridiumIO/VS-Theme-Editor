@@ -1,0 +1,180 @@
+﻿<ui:FluentWindow x:Class="VS_Theme_Editor.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:local="clr-namespace:VS_Theme_Editor"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="MainWindow"
+                 Width="1300" Height="700"
+                 d:DataContext="{d:DesignInstance local:MainWindowViewModel,
+                                                  IsDesignTimeCreatable=True}"
+                 ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"
+                 mc:Ignorable="d">
+    <ui:FluentWindow.Resources>
+        <local:StringToColorConverter x:Key="StringToColorConverter" />
+
+        <DrawingBrush x:Key="CheckerBrush"
+                      TileMode="Tile" Viewport="0,0,10,10" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <!--  Background white square  -->
+                    <GeometryDrawing Brush="White">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,10,10" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+
+                    <!--  Top-left black square  -->
+                    <GeometryDrawing Brush="#CCCCCC">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,5,5" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+
+                    <!--  Bottom-right black square  -->
+                    <GeometryDrawing Brush="#CCCCCC">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="5,5,5,5" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+    </ui:FluentWindow.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="90" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Title="VS Theme Editor"
+                     Grid.Row="0"
+                     Margin="-20,-20,-20,20" Panel.ZIndex="2" />
+
+        <StackPanel Grid.Row="1">
+            <Button Content="Select Theme File" />
+
+            <TextBlock Text="{Binding WorkingTheme.Name}"
+                       Margin="5,10"
+                       FontSize="18" FontWeight="Bold" />
+        </StackPanel>
+
+        <ui:Card Grid.Row="2">
+
+            <TabControl Grid.Row="2"
+                        ItemsSource="{Binding WorkingTheme.Categories}"
+                        TabStripPlacement="Left">
+                <TabControl.Resources>
+                    <Style TargetType="TabControl">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabControl">
+                                    <Grid KeyboardNavigation.TabNavigation="Local">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <!--  Scrollable Tab Strip  -->
+                                        <ScrollViewer CanContentScroll="True" HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto">
+                                            <TabPanel Name="HeaderPanel"
+                                                      Width="300"
+                                                      Margin="2,2,0,0"
+                                                      Background="#20000000" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                                        </ScrollViewer>
+                                        <!--  Tab Content  -->
+                                        <ContentPresenter Name="PART_SelectedContentHost"
+                                                          Grid.Column="1"
+                                                          Margin="4"
+                                                          ContentSource="SelectedContent" />
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate>
+                        <ui:DataGrid AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                                  ItemsSource="{Binding Entries}">
+                            <ui:DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding Name}" Header="Name"  />
+                                <!--<DataGridTextColumn Binding="{Binding BackgroundType}" Header="Background Type" />-->
+                                <!--  Background Preview  -->
+                                <DataGridTemplateColumn Width="200" Header="Background">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Grid>
+                                                    <Rectangle Width="32" Height="16"
+                                                               Fill="{StaticResource CheckerBrush}"
+                                                               Stroke="Black" StrokeThickness="0.5" />
+                                                    <Rectangle Width="32" Height="16"
+                                                               Stroke="Black" StrokeThickness="0.5">
+                                                        <Rectangle.Fill>
+                                                            <SolidColorBrush Color="{Binding Background, Converter={StaticResource StringToColorConverter}}" />
+                                                        </Rectangle.Fill>
+                                                    </Rectangle>
+                                                </Grid>
+
+                                                <ui:TextBox Text="{Binding Background, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            Width="110"
+                                                            Margin="5,0"
+                                                            PlaceholderText="#" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!--<DataGridTextColumn Binding="{Binding ForegroundType}" Header="Foreground Type" />-->
+                                <!--  Foreground Preview  -->
+                                <DataGridTemplateColumn Width="200" Header="Foreground">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Grid>
+                                                    <Rectangle Width="32" Height="16"
+                                                               Fill="{StaticResource CheckerBrush}"
+                                                               Stroke="Black" StrokeThickness="0.5" />
+                                                    <Rectangle Width="32" Height="16"
+                                                               Stroke="Black" StrokeThickness="0.5">
+                                                        <Rectangle.Fill>
+                                                            <SolidColorBrush Color="{Binding Foreground, Converter={StaticResource StringToColorConverter}}" />
+                                                        </Rectangle.Fill>
+                                                    </Rectangle>
+                                                </Grid>
+                                                <ui:TextBox Text="{Binding Foreground, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                         Width="110"
+                                                         Margin="5,0"
+                                                         PlaceholderText="#" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </ui:DataGrid.Columns>
+                        </ui:DataGrid>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+
+
+        </ui:Card>
+
+        <Button Content="Save"
+                Grid.Row="3"
+                Width="200" Height="50"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Command="{Binding SaveThemeCommand}" />
+
+    </Grid>
+</ui:FluentWindow>
