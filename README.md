@@ -13,3 +13,4 @@ Allows editing of `.pkgdef` themes for Visual Studio 2022.
 Installed themes can be found in the `%LOCALAPPDATA%\Microsoft\VisualStudio\17.0_ab1ff52e\Extensions\` folder.
 
 
+[Download](https://github.com/IridiumIO/VS-Theme-Editor/releases)
