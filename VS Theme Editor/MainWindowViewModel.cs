@@ -30,10 +30,10 @@ public partial class MainWindowViewModel : ObservableObject
 
 
     [ObservableProperty]
-    private string visualStudioDirectory = @"C:\Program Files\Microsoft Visual Studio\2023\Community";
-    
+    private string visualStudioDirectory = @"C:\Program Files\Microsoft Visual Studio\2022\Community";
+
     [ObservableProperty]
-    private string? ThemeFilePath { get; set; }
+    private string? themeFilePath;
 
 
     [ObservableProperty]
@@ -147,7 +147,7 @@ public partial class MainWindowViewModel : ObservableObject
 
 
     [RelayCommand]
-    public async void TestTheme()
+    public async Task TestTheme()
     {
 
         if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator) == false)
