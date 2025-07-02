@@ -12,14 +12,12 @@ namespace VS_Theme_Editor;
 internal class PkgDefDecompiler
 {
 
-    private const string FilePath = "pinkcandy.pkgdef";
-
     private static Regex sectionHeader = new(@"^\[\$RootKey\$\\Themes\\\{.+?\}\\(?<Category>.+?)\]", RegexOptions.Compiled);
     private static Regex dataLine = new("^\"Data\"=hex:(?<HexData>.+)$", RegexOptions.Compiled);
 
-    public Theme Decompile()
+    public Theme Decompile(string FilePath)
     {
-        var fileLines = readFile();
+        var fileLines = readFile(FilePath);
         var themeHeader = getThemeHeader(fileLines);
         
         var pkgDefEntries = getPkgDefEntries(fileLines);
@@ -31,16 +29,28 @@ internal class PkgDefDecompiler
             categories.Add(categoryData);
         }
 
-        Theme theme = new Theme
+        Theme theme = new Theme();
+
+        foreach (var categoryData in categories) {
+            theme.Categories.Add(categoryData);
+        }
+
+        if (themeHeader.TryGetValue("@", out var slug))
+            theme.Slug = slug;
+        if (themeHeader.TryGetValue("Name", out var name))
+            theme.Name = name;
+        if (themeHeader.TryGetValue("FallbackId", out var fallback))
+            theme.Fallback = fallback;
+        if (fileLines.Length > 0)
         {
-            Categories = categories
-        };
-        if (themeHeader.Count > 0)
-        {
-            theme.Guid = new Guid(themeHeader[0].Substring(19,36));
-            theme.Name = themeHeader[2].Split('=')[1].Trim('"');
-            theme.Slug = themeHeader[1].Split('=')[1].Trim('"');
-            theme.Fallback = themeHeader[3].Split('=')[1].Trim('"');
+            // Extract Guid from the section header line
+            var headerLine = fileLines.FirstOrDefault(l => l.StartsWith("[$RootKey$\\Themes", StringComparison.OrdinalIgnoreCase));
+            if (headerLine != null)
+            {
+                var guidMatch = Regex.Match(headerLine, @"\{([0-9a-fA-F\-]+)\}");
+                if (guidMatch.Success)
+                    theme.Guid = Guid.Parse(guidMatch.Groups[1].Value);
+            }
         }
 
         return theme;
@@ -48,23 +58,43 @@ internal class PkgDefDecompiler
     }
 
 
-    private string[] readFile()
+    private string[] readFile(string filepath)
     {
-        return System.IO.File.ReadAllLines(FilePath);
+        return System.IO.File.ReadAllLines(filepath);
     }
 
 
-    private List<string> getThemeHeader(string[] lines)
+    private Dictionary<string, string> getThemeHeader(string[] lines)
     {
-        var header = new List<string>();
+        var header = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        if (lines[1].StartsWith("@"))
+        // Find the section header (first line)
+        int i = 0;
+        while (i < lines.Length && !lines[i].StartsWith("[$RootKey$\\Themes", StringComparison.OrdinalIgnoreCase))
+            i++;
+
+        if (i >= lines.Length)
+            return header; // No header found
+
+        // Parse lines after the section header until a blank line or next section
+        i++;
+        for (; i < lines.Length; i++)
         {
-            header = lines[0..4].ToList();
-        }
-  
-        return header;
+            var line = lines[i].Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("["))
+                break;
 
+            // Match key-value pairs: @="...", "Name"="...", "FallbackId"="..."
+            var match = Regex.Match(line, @"^(?<key>@|""[^""]+"")\s*=\s*""(?<value>.*)""$");
+            if (match.Success)
+            {
+                var key = match.Groups["key"].Value.Trim('"');
+                var value = match.Groups["value"].Value;
+                header[key] = value;
+            }
+        }
+
+        return header;
     }
 
 
@@ -122,6 +152,19 @@ internal class PkgDefDecompiler
 
         for (int i = 0; i < entryCount; i++)
         {
+
+            //if (i == 80)
+            //{
+            //    Debug.WriteLine("Trouble");
+            //    // Get the remaining hex data in hex as a string for debugging
+            //    var current = ms.Position;
+            //    string remainingHex = BitConverter.ToString(reader.ReadBytes((int)(ms.Length - ms.Position))).Replace("-", ", ");
+            //    Debug.WriteLine($"Remaining Hex Data: {remainingHex}");
+
+            //    ms.Seek(current, SeekOrigin.Begin);
+
+            //}
+
             int nameLength = reader.ReadInt32();
             string name = Encoding.UTF8.GetString(reader.ReadBytes(nameLength));
 
@@ -168,12 +211,14 @@ internal class PkgDefDecompiler
 
     static bool IsValidColorType(byte colorType)
     {
-        return colorType is 1 or 2 or 3 or 4; // CT_RAW, CT_SYSCOLOR, CT_AUTOMATIC, CT_COLORINDEX
+        return colorType is 1 or 2 or 3 or 4 or 5 or 6 or 7; // CT_RAW, CT_SYSCOLOR, CT_AUTOMATIC, CT_COLORINDEX, CT_AUTOMATIC, CT_TRACK_FOREGROUND, CT_TRACK_BACKGROUND
     }
 
     static string FormatArgb(uint abgr)
     {
-        return $"#{(abgr >> 24) & 0xFF:X2}{abgr & 0xFF:X2}{(abgr >> 8) & 0xFF:X2}{(abgr >> 16) & 0xFF:X2}";
+        var color = $"#{(abgr >> 24) & 0xFF:X2}{abgr & 0xFF:X2}{(abgr >> 8) & 0xFF:X2}{(abgr >> 16) & 0xFF:X2}";
+
+        return color;
     }
 
 

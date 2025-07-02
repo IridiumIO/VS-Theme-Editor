@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace VS_Theme_Editor;
 
@@ -18,5 +19,5 @@ public partial class Theme: ObservableObject
     private string? fallback  = null;
 
     [ObservableProperty]
-    private List<CategoryData> categories = new List<CategoryData>();
+    private ObservableCollection<CategoryData> categories = new ObservableCollection<CategoryData>();
 }

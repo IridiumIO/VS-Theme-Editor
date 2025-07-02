@@ -6,9 +6,8 @@
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="MainWindow"
-                 Width="1300" Height="700"
-                 d:DataContext="{d:DesignInstance local:MainWindowViewModel,
-                                                  IsDesignTimeCreatable=True}"
+                 Width="1300" Height="700" d:Background="Black"
+                 d:DataContext="{d:DesignInstance local:MainWindowViewModel}"
                  ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"
                  mc:Ignorable="d">
     <ui:FluentWindow.Resources>
@@ -46,135 +45,203 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="90" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
+
+        <ContentPresenter x:Name="RootContentDialog" Grid.RowSpan="4" Panel.ZIndex="3" />
+
         <ui:TitleBar Title="VS Theme Editor"
                      Grid.Row="0"
                      Margin="-20,-20,-20,20" Panel.ZIndex="2" />
 
-        <StackPanel Grid.Row="1">
-            <Button Content="Select Theme File" />
+        <Menu Grid.Row="0" Margin="-5 10 0 0">
+            <MenuItem Header="File">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Document16"/>
+                </MenuItem.Icon>
+                <MenuItem Header="_Open..." Command="{Binding SelectThemeCommand}" InputGestureText="O" >
+                    <MenuItem.Icon>
+                        <ui:SymbolIcon Symbol="BookOpen16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Save" Command="{Binding SaveThemeCommand}" InputGestureText="S"> 
+                    <MenuItem.Icon>
+                        <ui:SymbolIcon Symbol="Save16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="S_ave As..." Command="{Binding SaveAsThemeCommand}" InputGestureText="A">
+                    <MenuItem.Icon>
+                        <ui:SymbolIcon Symbol="Save16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Test in Visual Studio..." Command="{Binding TestThemeCommand}" InputGestureText="T">
+                    <MenuItem.Icon>
+                        <ui:SymbolIcon Symbol="Run16"/>
+                    </MenuItem.Icon>
+                </MenuItem>
 
-            <TextBlock Text="{Binding WorkingTheme.Name}"
-                       Margin="5,10"
-                       FontSize="18" FontWeight="Bold" />
+            </MenuItem>
+           
+        </Menu>
+
+        <ui:Card Grid.Row="1">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="450"/>
+                    <ColumnDefinition Width="450"/>
+
+                </Grid.ColumnDefinitions>
+
+
+                <StackPanel Grid.Column="0" >
+
+
+                    <Label Content="Theme Details:"/>
+
+                    <StackPanel Orientation="Horizontal" >
+                        <TextBlock Text="Theme Name: " VerticalAlignment="Center" Width="100"/>
+                        <ui:TextBox Text="{Binding WorkingTheme.Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Margin="5,5" Width="320"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" >
+                        <TextBlock Text="Guid: " VerticalAlignment="Center" Width="100"/>
+                        <ui:TextBox Text="{Binding WorkingTheme.Guid}" Margin="5,5" Width="320" IsReadOnly="True"/>
+                        <Button Margin="-40 2 0 0" Height="36" Width="36" Background="Transparent" BorderBrush="Transparent" Command="{Binding RegenerateGuidCommand}" >
+                            <ui:SymbolIcon Symbol="ArrowRotateClockwise24"/>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock Text="Regenerate Guid"/>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                    </StackPanel>
+
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" >
+
+
+                    <Label Content=""/>
+
+                    <StackPanel Orientation="Horizontal" >
+                        <TextBlock Text="Theme Slug: " VerticalAlignment="Center" Width="100"/>
+                        <ui:TextBox Text="{Binding WorkingTheme.Slug, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Margin="5,5" Width="320"/>
+                    </StackPanel>
+
+
+                </StackPanel>
+
+            </Grid>
+         
+        </ui:Card>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,10,8" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+            <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ui:TextBox Width="200"
+                Text="{Binding ColorFilter, UpdateSourceTrigger=PropertyChanged}" 
+                />
         </StackPanel>
 
-        <ui:Card Grid.Row="2">
+        <ui:Card Grid.Row="2" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
 
-            <TabControl Grid.Row="2"
-                        ItemsSource="{Binding WorkingTheme.Categories}"
-                        TabStripPlacement="Left">
-                <TabControl.Resources>
-                    <Style TargetType="TabControl">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="TabControl">
-                                    <Grid KeyboardNavigation.TabNavigation="Local">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*" />
-                                        </Grid.RowDefinitions>
-                                        <!--  Scrollable Tab Strip  -->
-                                        <ScrollViewer CanContentScroll="True" HorizontalScrollBarVisibility="Disabled"
-                                                      VerticalScrollBarVisibility="Auto">
-                                            <TabPanel Name="HeaderPanel"
-                                                      Width="300"
-                                                      Margin="2,2,0,0"
-                                                      Background="#20000000" IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
-                                        </ScrollViewer>
-                                        <!--  Tab Content  -->
-                                        <ContentPresenter Name="PART_SelectedContentHost"
-                                                          Grid.Column="1"
-                                                          Margin="4"
-                                                          ContentSource="SelectedContent" />
-                                    </Grid>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </TabControl.Resources>
-                <TabControl.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                </TabControl.ItemTemplate>
-                <TabControl.ContentTemplate>
-                    <DataTemplate>
-                        <ui:DataGrid AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                                  ItemsSource="{Binding Entries}">
-                            <ui:DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding Name}" Header="Name"  />
-                                <!--<DataGridTextColumn Binding="{Binding BackgroundType}" Header="Background Type" />-->
-                                <!--  Background Preview  -->
-                                <DataGridTemplateColumn Width="200" Header="Background">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Grid>
-                                                    <Rectangle Width="32" Height="16"
-                                                               Fill="{StaticResource CheckerBrush}"
-                                                               Stroke="Black" StrokeThickness="0.5" />
-                                                    <Rectangle Width="32" Height="16"
-                                                               Stroke="Black" StrokeThickness="0.5">
-                                                        <Rectangle.Fill>
-                                                            <SolidColorBrush Color="{Binding Background, Converter={StaticResource StringToColorConverter}}" />
-                                                        </Rectangle.Fill>
-                                                    </Rectangle>
-                                                </Grid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition MinWidth="300" Width="300"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <ui:ListView x:Name="WorkingThemeCategories" ItemsSource="{Binding WorkingTheme.Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" Margin="5 0" VirtualizingPanel.ScrollUnit="Pixel">
+                    <ui:ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Margin="5"/>
+                        </DataTemplate>
+                    </ui:ListView.ItemTemplate>
+                    <ui:ListView.ContextMenu>
+                            <ContextMenu>
+                            <MenuItem Header="_Add New Category"  Click="btn_AddCategory_clicked" CommandParameter="{Binding ElementName=WorkingThemeCategories, Path=SelectedItem}" InputGestureText="A">
+                                    <MenuItem.Icon>
+                                        <ui:SymbolIcon Symbol="Add12"/>
+                                    </MenuItem.Icon>
+                            </MenuItem>
+                                
+                                <Separator/>
+                            <MenuItem Header="Delete Category" Foreground="#d70000" Command="{Binding DeleteCategoryCommand}" CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}" InputGestureText="Del">
+                                    <MenuItem.Icon>
+                                        <ui:SymbolIcon Symbol="Delete12" Foreground="#d70000" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                    </ui:ListView.ContextMenu>
+                </ui:ListView>
+                <GridSplitter Width="3" Background="#20FFFFFF"/>
 
-                                                <ui:TextBox Text="{Binding Background, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            Width="110"
-                                                            Margin="5,0"
-                                                            PlaceholderText="#" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <!--<DataGridTextColumn Binding="{Binding ForegroundType}" Header="Foreground Type" />-->
-                                <!--  Foreground Preview  -->
-                                <DataGridTemplateColumn Width="200" Header="Foreground">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Grid>
-                                                    <Rectangle Width="32" Height="16"
-                                                               Fill="{StaticResource CheckerBrush}"
-                                                               Stroke="Black" StrokeThickness="0.5" />
-                                                    <Rectangle Width="32" Height="16"
-                                                               Stroke="Black" StrokeThickness="0.5">
-                                                        <Rectangle.Fill>
-                                                            <SolidColorBrush Color="{Binding Foreground, Converter={StaticResource StringToColorConverter}}" />
-                                                        </Rectangle.Fill>
-                                                    </Rectangle>
-                                                </Grid>
-                                                <ui:TextBox Text="{Binding Foreground, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                         Width="110"
-                                                         Margin="5,0"
-                                                         PlaceholderText="#" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </ui:DataGrid.Columns>
-                        </ui:DataGrid>
-                    </DataTemplate>
-                </TabControl.ContentTemplate>
-            </TabControl>
+                <ui:DataGrid Grid.Column="1" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" 
+             ItemsSource="{Binding FilteredEntries}" VirtualizingPanel.ScrollUnit="Pixel">
+                    <ui:DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Name}" Header="Name"/>
+                        <!--<DataGridTextColumn Binding="{Binding BackgroundType}" Header="Background Type" />-->
+                        <!--  Background Preview  -->
+                        <DataGridTemplateColumn Width="200" Header="Background">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid>
+                                            <Rectangle Width="32" Height="16"
+                                           Fill="{StaticResource CheckerBrush}"
+                                           Stroke="Black" StrokeThickness="0.5" />
+                                            <Rectangle Width="32" Height="16"
+                                           Stroke="Black" StrokeThickness="0.5">
+                                                <Rectangle.Fill>
+                                                    <SolidColorBrush Color="{Binding Background, Converter={StaticResource StringToColorConverter}}" />
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                        </Grid>
 
+                                        <ui:TextBox Text="{Binding Background, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="110"
+                                        Margin="5,0"
+                                        PlaceholderText="#" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <!--<DataGridTextColumn Binding="{Binding ForegroundType}" Header="Foreground Type" />-->
+                        <!--  Foreground Preview  -->
+                        <DataGridTemplateColumn Width="200" Header="Foreground">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid>
+                                            <Rectangle Width="32" Height="16"
+                                           Fill="{StaticResource CheckerBrush}"
+                                           Stroke="Black" StrokeThickness="0.5" />
+                                            <Rectangle Width="32" Height="16"
+                                           Stroke="Black" StrokeThickness="0.5">
+                                                <Rectangle.Fill>
+                                                    <SolidColorBrush Color="{Binding Foreground, Converter={StaticResource StringToColorConverter}}" />
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                        </Grid>
+                                        <ui:TextBox Text="{Binding Foreground, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Width="110"
+                                     Margin="5,0"
+                                     PlaceholderText="#" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </ui:DataGrid.Columns>
+                </ui:DataGrid>
+
+            </Grid>
 
         </ui:Card>
 
-        <Button Content="Save"
-                Grid.Row="3"
-                Width="200" Height="50"
-                HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                Command="{Binding SaveThemeCommand}" />
+
 
     </Grid>
 </ui:FluentWindow>

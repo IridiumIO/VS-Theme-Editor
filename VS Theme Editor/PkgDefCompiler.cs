@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Media;
 
 namespace VS_Theme_Editor;
 
@@ -13,13 +14,13 @@ internal class PkgDefCompiler
         using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
 
         // Write theme header
-        if (theme.Guid == null || theme.Name == null || theme.Slug == null || theme.Fallback == null)
+        if (theme.Guid == null || theme.Name == null || theme.Slug == null )
             throw new InvalidOperationException("Theme header properties must not be null.");
 
         writer.WriteLine($"[$RootKey$\\Themes\\{{{theme.Guid}}}]");
         writer.WriteLine($"@=\"{theme.Slug}\"");
         writer.WriteLine($"\"Name\"=\"{theme.Name}\"");
-        writer.WriteLine($"\"FallbackId\"=\"{theme.Fallback}\"");
+        writer.WriteLine(theme.Fallback is not null ? $"\"FallbackId\"=\"{theme.Fallback}\"" : "");
         writer.WriteLine();
 
         // Write each category
@@ -49,10 +50,10 @@ internal class PkgDefCompiler
             int nameBytesLength = Encoding.UTF8.GetByteCount(entry.Name ?? "");
             // Each entry: name length (4) + name bytes + bgType (1) + [bg (4)?] + fgType (1) + [fg (4)?]
             dataLength += 4 + nameBytesLength + 1;
-            if (IsValidColorType(entry.BackgroundType) && TryParseArgb(entry.Background, out _))
+            if (TryParseArgb(entry.Background, out _))
                 dataLength += 4;
             dataLength += 1;
-            if (IsValidColorType(entry.ForegroundType) && TryParseArgb(entry.Foreground, out _))
+            if (TryParseArgb(entry.Foreground, out _))
                 dataLength += 4;
         }
 
@@ -70,13 +71,39 @@ internal class PkgDefCompiler
             writer.Write(nameBytes.Length);
             writer.Write(nameBytes);
 
-            writer.Write(entry.BackgroundType);
-            if (IsValidColorType(entry.BackgroundType) && TryParseArgb(entry.Background, out uint bgArgb))
-                writer.Write(bgArgb);
+            if (TryParseArgb(entry.Background, out uint bgArgb))
+            { 
+                if (entry.BackgroundType == 0)
+                {
+                    writer.Write((byte)1);
 
-            writer.Write(entry.ForegroundType);
-            if (IsValidColorType(entry.ForegroundType) && TryParseArgb(entry.Foreground, out uint fgArgb))
+                }
+                else
+                {
+                    writer.Write((byte)entry.BackgroundType);
+                }
+                    writer.Write(bgArgb); 
+            }else
+            {
+                writer.Write((byte)0); // No background color
+            }
+
+            if (TryParseArgb(entry.Foreground, out uint fgArgb))
+            {
+                if (entry.ForegroundType == 0)
+                {
+                    writer.Write((byte)1);
+
+                }
+                else
+                {
+                    writer.Write((byte)entry.ForegroundType);
+                }
                 writer.Write(fgArgb);
+            }else
+            {
+                writer.Write((byte)0); // No foreground color
+            }
         }
 
         // Convert to hex string
@@ -96,7 +123,11 @@ internal class PkgDefCompiler
             return false;
         var hex = color.TrimStart('#');
         if (hex.Length != 8)
-            return false;
+        {
+            Color test = (Color)ColorConverter.ConvertFromString(color); // Try to parse as ARGB hex string
+            if (test.ToString().Length != 8) return false;
+            hex = test.ToString();
+        }
 
         // Parse as ARGB
         if (!uint.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out uint argb))
