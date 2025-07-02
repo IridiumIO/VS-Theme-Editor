@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,11 +8,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Resources;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Threading;
+using Wpf.Ui;
 
 namespace VS_Theme_Editor;
 
@@ -26,7 +30,7 @@ public partial class MainWindowViewModel : ObservableObject
 
 
     [ObservableProperty]
-    private string visualStudioDirectory = @"C:\Program Files\Microsoft Visual Studio\2022\Community";
+    private string visualStudioDirectory = @"C:\Program Files\Microsoft Visual Studio\2023\Community";
     
     [ObservableProperty]
     private string? ThemeFilePath { get; set; }
@@ -38,9 +42,12 @@ public partial class MainWindowViewModel : ObservableObject
     public ICollectionView? FilteredEntries { get; private set; }
 
 
-    public MainWindowViewModel()
+    private ISnackbarService _snackbarService;
+
+    public MainWindowViewModel(ISnackbarService snackbarService)
     {
- 
+        _snackbarService = snackbarService;
+   
     }
 
 
@@ -140,10 +147,68 @@ public partial class MainWindowViewModel : ObservableObject
 
 
     [RelayCommand]
-    public void TestTheme()
+    public async void TestTheme()
     {
+
+        if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator) == false)
+        {
+
+            var ret = MessageBox.Show("Admin mode is required to test the theme as it needs access to the Visual Studio Directory. Restart in Admin mode? (Make sure you save the theme first!)", "Administrator Mode required", MessageBoxButton.YesNo);
+
+            if (ret == MessageBoxResult.Yes)
+            {
+                //Restart as admin
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = System.AppContext.BaseDirectory + AppDomain.CurrentDomain.FriendlyName,
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+
+                Process.Start(startInfo);
+
+                Application.Current.Shutdown();
+            }
+
+            return;
+          
+        }
+
+
+
+        if (Directory.Exists(VisualStudioDirectory) == false)
+        {
+            MessageBox.Show("Please select the Visual Studio Directory (/Microsoft Visual Studio/2022/Community", "Visual Studio Directory Not Found");
+            var folderDialog = new Microsoft.Win32.OpenFolderDialog()
+            {
+                Title = "Select Visual Studio Community 2022 Directory (/Microsoft Visual Studio/2022/Community)",
+                Multiselect = false
+            };
+            if (folderDialog.ShowDialog() == true)
+            {
+                var directoryName = folderDialog.FolderName;
+                VisualStudioDirectory = folderDialog.FolderName ?? string.Empty;
+
+            }
+            else
+            {
+                return; // User cancelled the dialog
+            }
+        }
+
         var VSExe = Path.Combine(VisualStudioDirectory, @"Common7\IDE\devenv.exe");
         var VSThemeDir = @"Common7\IDE\CommonExtensions\Platform";
+
+        if (!File.Exists(VSExe))
+        {
+            MessageBox.Show("Visual Studio executable not found. Please ensure the path is correct.", "Error");
+            return;
+        }
+        if (!Directory.Exists(Path.Combine(VisualStudioDirectory, VSThemeDir)))
+        {
+            MessageBox.Show("Visual Studio theme directory not found. Please ensure the path is correct.", "Error");
+            return;
+        }
 
         var outputFilePath = Path.Combine(VisualStudioDirectory, VSThemeDir, "ThemeTest.pkgdef");
 
@@ -151,11 +216,22 @@ public partial class MainWindowViewModel : ObservableObject
         compiler.Compile(WorkingTheme, outputFilePath);
 
         var updateConfigProcess = Process.Start(VSExe, "/updateconfiguration");
-        updateConfigProcess.WaitForExit();
+        
+        _snackbarService.Show("Testing Theme", "Updating Visual Studio Configuration. Please wait...", Wpf.Ui.Controls.ControlAppearance.Info, null, TimeSpan.FromSeconds(15));
+
+        await updateConfigProcess.WaitForExitAsync();
+        _snackbarService.Show("Testing Theme", "Close Visual Studio to Continue", Wpf.Ui.Controls.ControlAppearance.Success, null, TimeSpan.FromSeconds(1000));
+
+
         if (updateConfigProcess.ExitCode != 0) throw new Exception("VS Failed to Update Config");
+        await Task.Delay(1000); // Wait a bit to ensure the config is updated
 
-        Process.Start(VSExe);
+        var runner = Process.Start(VSExe);
 
+        runner.WaitForExit();
+        _snackbarService.Show("Testing Theme", "Visual Studio Closed. You can now edit the theme.", Wpf.Ui.Controls.ControlAppearance.Success, null, TimeSpan.FromSeconds(10));
+
+        File.Delete(outputFilePath);
 
     }
 

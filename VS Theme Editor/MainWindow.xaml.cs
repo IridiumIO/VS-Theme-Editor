@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 
 namespace VS_Theme_Editor;
@@ -18,23 +19,26 @@ public partial class MainWindow : FluentWindow
     {
         InitializeComponent();
 
-        _viewModel = new MainWindowViewModel();
+        ISnackbarService snackbarService = new SnackbarService();
+        snackbarService.SetSnackbarPresenter(RootSnackbar);
+
+        _viewModel = new MainWindowViewModel(snackbarService);
         DataContext = _viewModel;
 
-        if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator) == false)
-        {
-            //Restart as admin
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = System.AppContext.BaseDirectory + AppDomain.CurrentDomain.FriendlyName,
-                UseShellExecute = true,
-                Verb = "runas"
-            };
+        //if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator) == false)
+        //{
+        //    //Restart as admin
+        //    var startInfo = new ProcessStartInfo
+        //    {
+        //        FileName = System.AppContext.BaseDirectory + AppDomain.CurrentDomain.FriendlyName,
+        //        UseShellExecute = true,
+        //        Verb = "runas"
+        //    };
 
-            Process.Start(startInfo);
+        //    Process.Start(startInfo);
 
-            Application.Current.Shutdown();
-        }
+        //    Application.Current.Shutdown();
+        //}
 
     }
 
