@@ -71,13 +71,24 @@ public partial class MainWindowViewModel : ObservableObject
         if (WorkingTheme is null || ThemeFilePath is null) return;
 
         var fileDialog = new Microsoft.Win32.SaveFileDialog();
-        fileDialog.Filter = "PkgDef files (*.pkgdef)|*.pkgdef";
+        fileDialog.Filter = "PkgDef files (*.pkgdef)|*.pkgdef|VsTheme files (*.vstheme)|*.vstheme";
         fileDialog.DefaultExt = ".pkgdef";
+        fileDialog.AddExtension = true; // default is true, but just to be explicit
 
         if (fileDialog.ShowDialog() == true)
         {
-            var compiler = new PkgDefCompiler();
-            compiler.Compile(WorkingTheme, fileDialog.FileName);
+            var extension = Path.GetExtension(fileDialog.FileName);
+
+            if (string.Equals(extension, ".vstheme", StringComparison.OrdinalIgnoreCase))
+            {
+                var compiler = new VsThemeCompiler();
+                compiler.Compile(WorkingTheme, fileDialog.FileName);
+            }
+            else
+            {
+                var compiler = new PkgDefCompiler();
+                compiler.Compile(WorkingTheme, fileDialog.FileName);
+            }
         }
 
     }
