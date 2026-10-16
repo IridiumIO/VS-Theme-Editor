@@ -178,12 +178,18 @@
                              ItemsSource="{Binding WorkingTheme.Categories}"
                              SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
                              VirtualizingPanel.ScrollUnit="Pixel">
-                    <ui:ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Name}" Margin="5" />
-                        </DataTemplate>
-                    </ui:ListView.ItemTemplate>
-                    <ui:ListView.ContextMenu>
+					<ui:ListView.ItemTemplate>
+						<DataTemplate>
+							<StackPanel Margin="5,4">
+								<TextBlock Text="{Binding Name}" />
+								<TextBlock Text="{Binding Guid}"
+									Opacity="0.7"
+									FontSize="12"
+								/>
+							</StackPanel>
+						</DataTemplate>
+					</ui:ListView.ItemTemplate>
+					<ui:ListView.ContextMenu>
                         <ContextMenu>
                             <MenuItem Click="btn_AddCategory_clicked"
                                       CommandParameter="{Binding ElementName=WorkingThemeCategories, Path=SelectedItem}"

@@ -124,8 +124,7 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
 
-    [RelayCommand]
-    public void AddCategory(string categoryName)
+    public void AddCategory(string categoryName, Guid guid)
     {
         if (WorkingTheme is null) return;
         if (string.IsNullOrWhiteSpace(categoryName))
@@ -136,7 +135,8 @@ public partial class MainWindowViewModel : ObservableObject
         var newCategory = new CategoryData
         {
             Name = categoryName,
-            Entries = new List<ThemeColorEntry>()
+            Entries = new List<ThemeColorEntry>(),
+			Guid = guid
         };
         WorkingTheme.Categories.Add(newCategory);
         OnPropertyChanged(nameof(WorkingTheme));

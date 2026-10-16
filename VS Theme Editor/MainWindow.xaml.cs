@@ -51,20 +51,20 @@ public partial class MainWindow : FluentWindow
         if (_viewModel.WorkingTheme is null) return;
 
 
-        var textBox = new Wpf.Ui.Controls.TextBox
+        var catNameTextbox = new Wpf.Ui.Controls.TextBox
         {
             PlaceholderText = "Category Name"
         };
 
-        var label = new Wpf.Ui.Controls.TextBlock
+        var catGuidTextbox = new Wpf.Ui.Controls.TextBox
         {
-            Text = "Enter the name of the new category:"
+            PlaceholderText = "GUID"
         };
 
         var stackPanel = new StackPanel
         {
             Orientation = System.Windows.Controls.Orientation.Vertical,
-            Children = { label, textBox }
+            Children = { catNameTextbox, catGuidTextbox }
         };
 
         var cDialog = new Wpf.Ui.Controls.ContentDialog
@@ -79,7 +79,7 @@ public partial class MainWindow : FluentWindow
         var retX = await cDialog.ShowAsync();
 
         if (retX != Wpf.Ui.Controls.ContentDialogResult.Primary) return;
-        if (string.IsNullOrWhiteSpace(textBox.Text))
+        if (string.IsNullOrWhiteSpace(catNameTextbox.Text))
         {
             var msgBox = new Wpf.Ui.Controls.MessageBox
             {
@@ -87,10 +87,20 @@ public partial class MainWindow : FluentWindow
                 Content = "Category name cannot be empty."
             };
             await msgBox.ShowDialogAsync();
+			return;
         }
 
+		if( !Guid.TryParse(catGuidTextbox.Text, out Guid parsedGuid) ) {
+            var msgBox = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = "Error",
+                Content = "Invalid Guid."
+            };
+            await msgBox.ShowDialogAsync();
+			return;
+		}
 
-        _viewModel.AddCategory(textBox.Text);
+        _viewModel.AddCategory(catNameTextbox.Text, parsedGuid);
 
         WorkingThemeCategories.ScrollIntoView(WorkingThemeCategories.SelectedItem);
 
