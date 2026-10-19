@@ -10,6 +10,7 @@ using System.Linq;
 using System.Resources;
 using System.Security.Principal;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,6 +42,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public ICollectionView? FilteredEntries { get; private set; }
 
+    const string DialogFilters = "All Formats (*.pkgdef;*.json)|*.pkgdef;*.json|Registry Format (*.pkgdef)|*.pkgdef|JSON Format (*.json)|*.json";
 
     private ISnackbarService _snackbarService;
 
@@ -71,13 +73,24 @@ public partial class MainWindowViewModel : ObservableObject
         if (WorkingTheme is null || ThemeFilePath is null) return;
 
         var fileDialog = new Microsoft.Win32.SaveFileDialog();
-        fileDialog.Filter = "PkgDef files (*.pkgdef)|*.pkgdef";
-        fileDialog.DefaultExt = ".pkgdef";
+        fileDialog.Filter = DialogFilters;
+        fileDialog.DefaultExt = Path.GetExtension(ThemeFilePath);
 
         if (fileDialog.ShowDialog() == true)
         {
-            var compiler = new PkgDefCompiler();
-            compiler.Compile(WorkingTheme, fileDialog.FileName);
+            var chosenExt = Path.GetExtension(fileDialog.FileName);
+
+            switch (chosenExt) {
+                case ".pkgdef":
+                    var compiler = new PkgDefCompiler();
+                    compiler.Compile(WorkingTheme, fileDialog.FileName);
+                break;
+
+                case ".json":
+                    var json = JsonSerializer.Serialize(WorkingTheme, Json.Options);
+                    File.WriteAllText(fileDialog.FileName, json);
+                break;
+            }
         }
 
     }
@@ -88,15 +101,27 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var fileDialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "PkgDef files (*.pkgdef)|*.pkgdef",
+            Filter = DialogFilters,
             Title = "Select a theme file"
         };
 
 
         if (fileDialog.ShowDialog() == true)
         {
-            var decompiler = new PkgDefDecompiler();
-            WorkingTheme = decompiler.Decompile(fileDialog.FileName);
+                    var chosenExt = Path.GetExtension(fileDialog.FileName);
+
+            switch (chosenExt) {
+                case ".pkgdef":
+                    var decompiler = new PkgDefDecompiler();
+                    WorkingTheme = decompiler.Decompile(fileDialog.FileName);
+                break;
+
+                case ".json":
+                    var json = File.ReadAllText(fileDialog.FileName);
+                    WorkingTheme = JsonSerializer.Deserialize<Theme>(json, Json.Options);
+                break;
+            }
+
             ThemeFilePath = fileDialog.FileName;
             OnPropertyChanged(nameof(WorkingTheme));
         }

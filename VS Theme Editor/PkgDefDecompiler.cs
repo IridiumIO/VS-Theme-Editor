@@ -197,11 +197,7 @@ internal class PkgDefDecompiler
         CategoryData categoryData = new CategoryData
         {
             Name = entry.SectionHeader,
-            DataLength = dataLength,
-            HeaderLength = headerLength,
-            CategoryCount = categoryCount,
             Guid = guid,
-            EntryCount = entryCount,
             Entries = result
         };
         

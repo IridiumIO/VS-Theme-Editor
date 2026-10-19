@@ -60,7 +60,7 @@ internal class PkgDefCompiler
         // Write header with recalculated values
         writer.Write(dataLength);
         writer.Write(11);
-        writer.Write(category.CategoryCount); // You may want to recalculate this as well if needed
+        writer.Write(1); // CategoryCount -- always 1??
         writer.Write(category.Guid.ToByteArray());
         writer.Write(entryCount);
 
